@@ -1,0 +1,36 @@
+.learnmore-container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .learnmore-container h1,
+  .learnmore-container h2 {
+    color: #2c3e50;
+  }
+  
+  .learnmore-container p {
+    color: #555;
+    line-height: 1.6;
+  }
+  
+  .learnmore-container ul {
+    padding-left: 20px;
+  }
+  
+  .learnmore-container ul li {
+    margin: 8px 0;
+    color: #333;
+  }
+  
+  @media (max-width: 768px) {
+    .learnmore-container {
+      width: 90%;
+      padding: 15px;
+    }
+  }
+  

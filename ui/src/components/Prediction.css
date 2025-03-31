@@ -1,0 +1,21 @@
+/* src/components/Prediction.css */
+
+.background-card,
+.acrylic-card {
+  border-radius: 10px;
+}
+
+.background-card {
+  /* Outer card with specified gradient */
+  background: linear-gradient(135deg, #4ca2af4b, #405b752a);
+  padding: 40px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.acrylic-card {
+  /* Inner acrylic card */
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  border-radius: 10px;
+}
