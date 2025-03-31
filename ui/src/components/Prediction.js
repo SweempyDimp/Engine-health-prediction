@@ -22,8 +22,6 @@ const Prediction = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // When Predict is clicked, send data to /predict, then call /predictions/create to save it,
-  // and finally redirect to the Dashboard page.
   const handlePredict = async (e) => {
     e.preventDefault();
     const features = [
@@ -44,13 +42,11 @@ const Prediction = () => {
     setError("");
 
     try {
-      // First, get the prediction result from the ML model.
       const response = await axios.post("http://localhost:8000/predict", features, {
         headers: { "Content-Type": "application/json" },
       });
       const predictionResult = response.data;
 
-      // Then, save the prediction to MongoDB.
       const token = localStorage.getItem("access_token");
       if (!token) {
         setError("You must be logged in to save predictions.");
@@ -73,10 +69,7 @@ const Prediction = () => {
         },
       });
 
-      // Optionally, save the prediction result to localStorage for the Dashboard's current prediction view.
       localStorage.setItem("lastPrediction", JSON.stringify(predictionResult));
-
-      // Redirect to Dashboard (which shows the current prediction).
       navigate("/dashboard");
     } catch (err) {
       console.error(err);
@@ -85,7 +78,6 @@ const Prediction = () => {
     setLoading(false);
   };
 
-  // Reset function to clear the form inputs.
   const handleReset = () => {
     setFormData({
       engineRpm: "",
@@ -99,14 +91,29 @@ const Prediction = () => {
   };
 
   return (
-    <Container className="my-5">
-      <Card className="background-card">
-        <Card.Body>
-          <Card className="acrylic-card">
-            <Card.Body>
-              <Card.Title className="text-center mb-4">
-                Engine Health Prediction
-              </Card.Title>
+    <div
+      style={{
+        backgroundImage: `url('${process.env.PUBLIC_URL}/images/image2.jpg')`,
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+        minHeight: "100vh",
+        padding: "20px",
+      }}
+    >
+      <Container className="my-5">
+        <Card
+          className="background-card"
+          style={{
+            background: `url('${process.env.PUBLIC_URL}/images/image3.jpg') no-repeat center center`,
+            backgroundSize: "cover",
+            maxWidth: "600px",
+            margin: "0 auto",
+          }}
+        >
+          <Card.Body>
+            {/* Replace inner Card with a div using our acrylic wrapper */}
+            <div className="acrylic-wrapper">
+              <h3 className="text-center mb-4">Engine Health Prediction</h3>
               <p className="text-center">
                 Enter your engine parameters below to predict its health status.
               </p>
@@ -181,11 +188,11 @@ const Prediction = () => {
                 </div>
               </Form>
               {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
-            </Card.Body>
-          </Card>
-        </Card.Body>
-      </Card>
-    </Container>
+            </div>
+          </Card.Body>
+        </Card>
+      </Container>
+    </div>
   );
 };
 
