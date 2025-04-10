@@ -8,11 +8,12 @@ import joblib
 import pandas as pd
 import numpy as np
 from pydantic import BaseModel
+from bson import ObjectId
 
-# Import our MongoDB collections from database.py
+# Import MongoDB collections from database.py
 from database import user_collection, prediction_collection
 
-# Import auth functions and constants
+# Import authentication functions and constants from auth.py
 from auth import (
     get_password_hash,
     verify_password,
@@ -20,8 +21,10 @@ from auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     SECRET_KEY,
     ALGORITHM,
+    get_current_user,
 )
 
+# Create FastAPI app instance
 app = FastAPI()
 
 # Configure CORS (adjust origins as necessary)
@@ -34,7 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load your ML model and CSV data for historical data
+# Load ML model and CSV data for historical data
 try:
     model = joblib.load("model_classifier.pkl")
 except Exception as e:
@@ -60,7 +63,7 @@ class PredictionIn(BaseModel):
     lub_oil_temp: float
     coolant_temp: float
     result: str = None  # Optional, can be set by prediction endpoint
-    timestamp: datetime = None  # Optional, default to current time if needed
+    timestamp: datetime = None  # Optional; if not provided, set automatically
 
 # ---------------------------
 # Authentication Endpoints
@@ -116,7 +119,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 # ---------------------------
-# Main Application Endpoints (Non-database predictions and CSV historical data)
+# Main Application Endpoints
 # ---------------------------
 @app.get("/")
 async def read_root():
@@ -143,51 +146,28 @@ async def predict(features: list[float]):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# MongoDB Prediction Endpoints
-# ---------------------------
-
-@app.post("/predict")
-async def predict(features: list[float]):
-    if len(features) != 6:
-        raise HTTPException(status_code=400, detail="Expected 6 features.")
-    try:
-        input_features = np.array(features).reshape(1, -1)
-        prediction = int(model.predict(input_features)[0])
-        prediction_proba = model.predict_proba(input_features)[0].tolist()
-        risk_status = "At risk – check maintenance" if prediction == 1 else "Working properly"
-        return {
-            "predicted_class": prediction,
-            "risk_status": risk_status,
-            "prediction_proba": prediction_proba,
-        }
-    except Exception as e:
-        print("Error in /predict:", str(e))
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-
-
-
-from bson import ObjectId
-
-def convert_objectids(data):
-    if isinstance(data, list):
-        return [convert_objectids(item) for item in data]
-    elif isinstance(data, dict):
-        return {key: convert_objectids(value) for key, value in data.items()}
-    elif isinstance(data, ObjectId):
-        return str(data)
-    else:
-        return data
-
 @app.post("/predictions/create")
 async def create_prediction(prediction: PredictionIn, current_user: dict = Depends(get_current_user)):
     prediction_dict = prediction.dict()
     prediction_dict["owner"] = current_user["_id"]
-    prediction_dict["timestamp"] = datetime.utcnow()
+    prediction_dict["timestamp"] = datetime.utcnow()  # Ensure timestamp is set
     new_prediction = await prediction_collection.insert_one(prediction_dict)
     created_prediction = await prediction_collection.find_one({"_id": new_prediction.inserted_id})
     # Convert any ObjectId in the returned document to string
+    def convert_objectids(data):
+        if isinstance(data, list):
+            return [convert_objectids(item) for item in data]
+        elif isinstance(data, dict):
+            return {key: convert_objectids(value) for key, value in data.items()}
+        elif isinstance(data, ObjectId):
+            return str(data)
+        else:
+            return data
     created_prediction = convert_objectids(created_prediction)
     return {"msg": "Prediction saved", "prediction": created_prediction}
+
+# ---------------------------
+# Include Predictions Router (for history endpoint)
+# ---------------------------
+from predictions import router as predictions_router
+app.include_router(predictions_router, prefix="/predictions")
